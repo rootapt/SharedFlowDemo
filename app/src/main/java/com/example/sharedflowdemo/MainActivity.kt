@@ -22,15 +22,19 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.sharedflowdemo.ui.theme.SharedFlowDemoTheme
 import kotlinx.coroutines.flow.SharedFlow
-
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             SharedFlowDemoTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    ScreenSetup(modifier = Modifier.padding(innerPadding))
+                Scaffold( modifier = Modifier.fillMaxSize() ) { innerPadding ->
+                    ScreenSetup(
+                        name = "Android",
+                        modifier = Modifier.padding(innerPadding)
+                    )
                 }
             }
         }
@@ -38,28 +42,26 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun ScreenSetup(
-    modifier: Modifier = Modifier,
-    viewModel: DemoViewModel = viewModel()
-) {
+fun ScreenSetup(modifier: Modifier = Modifier,viewModel: DemoViewModel = viewModel(), name: String) {
     MainScreen(modifier, viewModel.sharedFlow)
 }
-
 @Composable
-fun MainScreen(
-    modifier: Modifier = Modifier,
-    sharedFlow: SharedFlow<Int>
+fun MainScreen(modifier: Modifier = Modifier,
+               sharedFlow: SharedFlow<Int>
 ) {
     val messages = remember { mutableStateListOf<Int>()}
     val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(key1 = Unit) {
-        sharedFlow.collect {
-            messages.add(it)
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            sharedFlow.collect {
+                println("Collecting $it")
+                messages.add(it)
+            }
         }
     }
     LazyColumn(modifier = modifier) {
         items(messages) {
-            Text(
+            val text = Text(
                 "Collected Value = $it",
                 style = MaterialTheme.typography.headlineLarge,
                 modifier = Modifier.padding(5.dp)
